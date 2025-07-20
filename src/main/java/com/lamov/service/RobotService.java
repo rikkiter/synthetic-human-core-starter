@@ -2,9 +2,48 @@ package com.lamov.service;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.*;
 
 public class RobotService {
-    DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_TIME;
+    private DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_TIME;
+
+    ThreadPoolExecutor executor = new ThreadPoolExecutor(
+            2,
+            4,
+            1,
+            TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(100)
+    );
+
+
+    private void doCommand(
+            String description,
+            Priority priority,
+            String author,
+            String time
+    ) {
+
+        String message = "command: \"%s\" authored by \"%s\" at \"%s\" is done!\n";
+
+        if(priority == Priority.CRITICAL) {
+            System.out.printf("CRITICAL " + message, description, author, time);
+        }
+        else if(priority == Priority.COMMON) {
+            try {
+                executor.execute(() -> {
+                    System.out.printf("COMMON " + message, description, author, time);
+                    try {
+                        Thread.sleep(10000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                System.out.println("Command added to queue.");
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Queue is full.");
+            }
+        }
+    }
 
     public void giveCommand(
             String description,
@@ -24,19 +63,17 @@ public class RobotService {
             throw new IllegalArgumentException("Time must be in ISO-8601 format.");
         }
 
-        if(priority == Priority.CRITICAL) {
-            System.out.printf("CRITICAL command: \"%s\" authored by \"%s\" at time is done!", description, author, time);
-        }
+        doCommand(description, priority, author, time);
 
         return;
     }
 
     public static void main(String[] args) {
         RobotService robotService = new RobotService();
-        robotService.giveCommand("Hello", Priority.CRITICAL, "Slava", "18:00:00");
+        for(int i=0; i<10; i++) robotService.giveCommand("Hello", Priority.COMMON, "Slava", "18:00:00");
+        robotService.executor.shutdown();
     }
 }
-
 
 enum Priority {
     CRITICAL,
