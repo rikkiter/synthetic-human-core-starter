@@ -30,11 +30,11 @@ public class RobotService {
     ) {
         String message = "command: \"%s\" authored by \"%s\" at \"%s\" is done!\n";
 
-        if(description.length() > 10) throw new IllegalArgumentException("Command is too long (max 1000 characters)");
+        if(description.length() > 1000) throw new IllegalArgumentException("Command is too long (max 1000 characters)");
 
         if(!(priority instanceof Priority)) throw new IllegalArgumentException("Priority must be Enum");
 
-        if(author.length() > 10) throw new IllegalArgumentException("Author name is too long (max 100 characters).");
+        if(author.length() > 100) throw new IllegalArgumentException("Author name is too long (max 100 characters).");
 
         try {
             LocalTime.parse(time, isoFormatter);
